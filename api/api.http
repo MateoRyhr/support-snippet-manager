@@ -1,0 +1,9 @@
+### POST TEST
+POST http://localhost:3000/snippets
+Content-Type: application/json
+
+{
+  "title": "Saludo Inicial",
+  "content": "¡Hola! Gracias por comunicarte con soporte. ¿En qué te puedo ayudar hoy?",
+  "tags": ["saludo", "soporte"]
+}
