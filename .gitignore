@@ -1,0 +1,40 @@
+# --- General ---
+node_modules/
+.DS_Store
+Thumbs.db
+.env
+*.log
+
+# --- API (Node.js) ---
+api/dist/
+api/build/
+api/.env
+api/.next/
+api/out/
+
+# --- Database (Prisma/SQLite) ---
+api/prisma/*.db
+api/prisma/*.db-journal
+
+# --- Desktop (Electron) ---
+desktop/dist/
+desktop/build/
+desktop/out/
+desktop/*.exe
+desktop/*.dmg
+desktop/*.AppImage
+desktop/*.zip
+desktop/.webpack/
+
+# --- IDE & Editors ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# --- GitHub Actions ---
+# A veces se generan reportes de tests localmente
+coverage/
