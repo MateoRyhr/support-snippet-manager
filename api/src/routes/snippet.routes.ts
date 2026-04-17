@@ -10,10 +10,11 @@ import {
 
 const router = Router();
 
+// /snippets/...
 router.get('/', getSnippets);
 router.post('/', createSnippet);
-router.get('/:id', getSnippetById);     // NUEVO
-router.patch('/:id', updateSnippet);    // NUEVO (PATCH es mejor que PUT para actualizaciones parciales)
-router.delete('/:id', deleteSnippet);   // NUEVO
+router.get('/:id', getSnippetById);  
+router.patch('/:id', updateSnippet); 
+router.delete('/:id', deleteSnippet);
 
 export default router;
