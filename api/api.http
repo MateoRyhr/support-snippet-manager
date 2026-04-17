@@ -1,5 +1,21 @@
-### POST TEST
-POST http://localhost:3000/snippets
+# ==========================================
+# VARIABLES GLOBALES
+# (Reemplaza este ID con uno que te devuelva el POST para probar GET/PATCH/DELETE)
+# ==========================================
+@baseUrl = http://localhost:3000
+@snippetId = 2dd653c6-eb12-496a-971b-38d1d3f29f9f
+
+
+### HEALTH CHECK (Debería devolver 200 OK)
+GET {{baseUrl}}/health
+
+
+# ==========================================
+# CREATE (POST)
+# ==========================================
+
+### POST - Test Exitoso (Debería devolver 201 Created con el nuevo objeto)
+POST {{baseUrl}}/snippets
 Content-Type: application/json
 
 {
@@ -7,3 +23,89 @@ Content-Type: application/json
   "content": "¡Hola! Gracias por comunicarte con soporte. ¿En qué te puedo ayudar hoy?",
   "tags": ["saludo", "soporte"]
 }
+
+### POST - Error de Validación Zod (Debería devolver 400 Bad Request por título vacío)
+POST {{baseUrl}}/snippets
+Content-Type: application/json
+
+{
+  "title": "",
+  "content": "¡Hola! Gracias por comunicarte con soporte. ¿En qué te puedo ayudar hoy?",
+  "tags": ["saludo", "soporte"]
+}
+
+# ==========================================
+# READ (GET)
+# ==========================================
+
+### GET - Obtener todos (Debería devolver 200 OK con un array de snippets)
+GET {{baseUrl}}/snippets
+
+### GET - Por ID Exitoso (Debería devolver 200 OK con el objeto del snippet)
+GET {{baseUrl}}/snippets/{{snippetId}}
+
+### GET - Error Zod Formato UUID (Debería devolver 400 Bad Request)
+GET {{baseUrl}}/snippets/123
+
+### GET - Error 404 AppError (Debería devolver 404 Not Found porque el UUID es válido pero no existe en BD)
+GET {{baseUrl}}/snippets/11111111-1111-1111-1111-111111111111
+
+### GET - Buscar por un Tag (Debería traer los que tengan 'saludo')
+GET {{baseUrl}}/snippets?tags=saludo
+
+### GET - Buscar por múltiples Tags separados por coma (Debería traer los que tengan 'saludo' o 'soporte')
+GET {{baseUrl}}/snippets?tags=soporte, saludo
+
+### GET - Buscar por un Tag que no existe (Debería devolver un array vacío [])
+GET {{baseUrl}}/snippets?tags=este_tag_no_existe
+
+### GET - Buscar por Texto Libre (Debería encontrar coincidencias en título o contenido ignorando mayúsculas)
+GET {{baseUrl}}/snippets?search=mateo
+
+### GET - Búsqueda Avanzada: Combinar Tags y Texto Libre
+# (Ejemplo: Buscar "gracias" pero solo en los snippets que tengan el tag "soporte")
+GET {{baseUrl}}/snippets?search=por&tags=soporte
+
+# ==========================================
+# UPDATE (PATCH)
+# ==========================================
+
+### PATCH - Test Exitoso (Debería devolver 200 OK con el objeto actualizado)
+PATCH {{baseUrl}}/snippets/{{snippetId}}
+Content-Type: application/json
+
+{
+  "title": "Saludo Inicial Modificado",
+  "tags": ["saludo", "soporte", "actualizado"]
+}
+
+### PATCH - Error de Validación Zod (Debería devolver 400 Bad Request por título muy corto)
+PATCH {{baseUrl}}/snippets/{{snippetId}}
+Content-Type: application/json
+
+{
+  "title": "ab"
+}
+
+### PATCH - Error 404 AppError (Debería devolver 404 Not Found al intentar actualizar ID inexistente)
+PATCH {{baseUrl}}/snippets/11111111-1111-1111-1111-111111111111
+Content-Type: application/json
+
+{
+  "title": "Esto no se va a guardar"
+}
+
+
+# ==========================================
+# DELETE (DELETE)
+# ==========================================
+
+### DELETE - Error 404 AppError (Debería devolver 404 Not Found al intentar borrar ID inexistente)
+DELETE {{baseUrl}}/snippets/11111111-1111-1111-1111-111111111111
+
+### DELETE - Test Exitoso (Debería devolver 204 No Content, sin body en la respuesta)
+DELETE {{baseUrl}}/snippets/{{snippetId}}
+
+### GET - Verificar Borrado (Debería devolver 404 Not Found porque acabamos de borrarlo)
+GET {{baseUrl}}/snippets/{{snippetId}}
+
