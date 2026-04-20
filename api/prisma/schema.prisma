@@ -8,12 +8,44 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id        String    @id @default(uuid())
+  username  String    @unique
+  email     String    @unique
+  password  String    // Aquí guardaremos el hash, nunca la contraseña en texto plano
+  
+  // Relación: Un usuario puede tener muchos snippets
+  snippets  Snippet[] 
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 model Snippet {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
-  content     String   @db.Text
-  tags        String[] // PostgreSQL soporta Arrays nativamente
-  usageCount  Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  content     String    @db.Text
+  language    String    @default("plaintext") // Agregado para coincidir con tu UI de Electron
+  isPublic    Boolean   @default(false)       // Privado por defecto (Seguridad primero)
+  usageCount  Int       @default(0)           // Mantenemos tu contador de usos original
+  
+  // Clave foránea y relación con User
+  userId      String
+  author      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Relación Muchos-a-Muchos explícita (Prisma crea la tabla intermedia automáticamente)
+  tags        Tag[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Tag {
+  id        String    @id @default(uuid())
+  name      String    @unique // Único para no tener tags repetidos ("react", "React", etc)
+  
+  // Relación inversa: Un tag puede pertenecer a muchos snippets
+  snippets  Snippet[]
+  
+  createdAt DateTime  @default(now())
 }
