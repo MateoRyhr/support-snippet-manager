@@ -1,5 +1,5 @@
 appId: com.electron.app
-productName: snippet-manager-ui
+productName: code-snippet-manager-desktop
 directories:
   buildResources: build
 files:
@@ -12,7 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: snippet-manager-ui
+  executableName: code-snippet-manager-desktop
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
