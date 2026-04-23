@@ -5,102 +5,189 @@ import { prisma } from '../lib/prisma.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { AppError } from '../utils/AppError.js';
 
+// --- SCHEMAS ---
+
 const createSnippetSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres"),
   content: z.string().min(1, "El contenido no puede estar vacío"),
   tags: z.array(z.string()).optional().default([]),
+  isPublic: z.boolean().optional().default(false), // Added public flag
 });
 
-// Zod schema para actualizar (todos los campos son opcionales usando .partial())
 const updateSnippetSchema = createSnippetSchema.partial();
-const idParamSchema = z.uuid("El ID proporcionado no es un UUID válido");
+const idParamSchema = z.string().uuid("El ID proporcionado no es un UUID válido");
 
-// 1. Actualizamos el esquema para aceptar 'search'
 const getSnippetsQuerySchema = z.object({
   tags: z.string().optional(),
-  search: z.string().optional(), // NUEVO: Parámetro para texto libre
+  search: z.string().optional(),
 });
 
-export const getSnippets = catchAsync(async (req: Request, res: Response) => {
-  // Extraemos ambos parámetros
+// --- CONTROLLERS ---
+
+// 1. Get ONLY the snippets belonging to the logged-in user
+export const getMySnippets = catchAsync(async (req: Request, res: Response) => {
   const { tags, search } = getSnippetsQuerySchema.parse(req.query);
 
-  const whereClause: any = {};
+  // Security Boundary: Force the query to only look at this user's data
+  const whereClause: any = {
+    userId: req.user!.id, 
+  };
 
-  // Filtro 1: Por Tags (El que ya teníamos)
   if (tags) {
     const tagsArray = tags.split(',').map(tag => tag.trim());
-    whereClause.tags = {
-      hasSome: tagsArray,
-    };
+    whereClause.tags = { hasSome: tagsArray };
   }
 
-  // Filtro 2: Por Texto Libre (NUEVO)
   if (search) {
     whereClause.OR = [
-      {
-        title: {
-          contains: search,
-          mode: 'insensitive', // Ignora mayúsculas y minúsculas (Ej: 'Hola' == 'hola')
-        },
-      },
-      {
-        content: {
-          contains: search,
-          mode: 'insensitive',
-        },
-      },
+      { title: { contains: search, mode: 'insensitive' } },
+      { content: { contains: search, mode: 'insensitive' } },
     ];
   }
 
-  // Buscamos en la base de datos
+const snippets = await prisma.snippet.findMany({
+  where: whereClause,
+  orderBy: { createdAt: 'desc' },
+  include: { tags: true },
+});
+
+  res.status(200).json(snippets);
+});
+
+// 2. NEW: Get public snippets for the Community Explorer
+export const getPublicSnippets = catchAsync(async (req: Request, res: Response) => {
+  const { tags, search } = getSnippetsQuerySchema.parse(req.query);
+
+  const whereClause: any = {
+    isPublic: true, // Only fetch public snippets
+  };
+
+  if (tags) {
+    const tagsArray = tags.split(',').map(tag => tag.trim());
+    whereClause.tags = { hasSome: tagsArray };
+  }
+
+  if (search) {
+    whereClause.OR = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { content: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
   const snippets = await prisma.snippet.findMany({
     where: whereClause,
     orderBy: { createdAt: 'desc' },
+    include: { tags: true },
+    // Include the author's username so the frontend can display "Created by @username"
+    include: {
+      user: {
+        select: { username: true }
+      }
+    }
   });
 
   res.status(200).json(snippets);
 });
 
+// 3. Create a snippet attached to the user
 export const createSnippet = catchAsync(async (req: Request, res: Response) => {
   const validatedData = createSnippetSchema.parse(req.body);
-  const newSnippet = await prisma.snippet.create({ data: validatedData });
+  
+  const newSnippet = await prisma.snippet.create({ 
+    data: {
+      title: validatedData.title,
+      content: validatedData.content,
+      isPublic: validatedData.isPublic,
+      userId: req.user!.id,
+      // Logic for Many-to-Many relation
+      tags: {
+        connectOrCreate: validatedData.tags.map((tagName: string) => ({
+          where: { name: tagName },
+          create: { name: tagName },
+        })),
+      },
+    },
+    // We include tags in the response so the frontend receives them immediately
+    include: { tags: true }
+  });
+  
   res.status(201).json(newSnippet);
 });
 
+// 4. Get a single snippet (Public or Owned)
 export const getSnippetById = catchAsync(async (req: Request, res: Response) => {
-  // 2. Zod extrae el ID, valida que sea UUID y le garantiza a TypeScript que es un string
   const id = idParamSchema.parse(req.params.id);
 
-  const snippet = await prisma.snippet.findUnique({ where: { id } });
+  const snippet = await prisma.snippet.findUnique({ where: { id }, include: { tags: true } });
   
   if (!snippet) throw new AppError('Snippet no encontrado', 404);
+
+  // Authorization check: User can only see it if they own it OR if it's public
+  if (snippet.userId !== req.user!.id && !snippet.isPublic) {
+    throw new AppError('No tienes permiso para ver este snippet', 403);
+  }
   
   res.status(200).json(snippet);
 });
 
+// 5. Update a snippet (Must be owner)
 export const updateSnippet = catchAsync(async (req: Request, res: Response) => {
-  const id = idParamSchema.parse(req.params.id); // Validación Zod
+  const id = idParamSchema.parse(req.params.id);
   const validatedData = updateSnippetSchema.parse(req.body);
 
   const existingSnippet = await prisma.snippet.findUnique({ where: { id } });
   if (!existingSnippet) throw new AppError('Snippet no encontrado', 404);
 
+  if (existingSnippet.userId !== req.user!.id) {
+    throw new AppError('No tienes permiso para editar este snippet', 403);
+  }
+
   const updatedSnippet = await prisma.snippet.update({
     where: { id },
-    data: validatedData,
+    data: {
+      title: validatedData.title,
+      content: validatedData.content,
+      isPublic: validatedData.isPublic,
+      // When updating tags, we use 'set' to replace the old list with the new one
+      tags: validatedData.tags ? {
+        set: [], // Clear existing relations first
+        connectOrCreate: validatedData.tags.map((tagName: string) => ({
+          where: { name: tagName },
+          create: { name: tagName },
+        })),
+      } : undefined,
+    },
+    include: { tags: true }
   });
 
   res.status(200).json(updatedSnippet);
 });
 
+// 6. Delete a snippet (Must be owner)
+// api/src/controllers/snippet.controller.ts
+
 export const deleteSnippet = catchAsync(async (req: Request, res: Response) => {
-  const id = idParamSchema.parse(req.params.id); // Validación Zod
+  const { id } = req.params;
 
-  const existingSnippet = await prisma.snippet.findUnique({ where: { id } });
-  if (!existingSnippet) throw new AppError('Snippet no encontrado', 404);
+  // 1. Buscar si el snippet existe
+  const existingSnippet = await prisma.snippet.findUnique({ 
+    where: { id } 
+  });
 
-  await prisma.snippet.delete({ where: { id } });
+  if (!existingSnippet) {
+    throw new AppError('Snippet no encontrado', 404);
+  }
 
-  res.status(204).send();
+  // 2. Validación de seguridad CRÍTICA: ¿Es el dueño?
+  if (existingSnippet.userId !== req.user!.id) {
+    throw new AppError('No tienes permiso para eliminar este snippet', 403);
+  }
+
+  // 3. Eliminar (Prisma se encarga de limpiar las relaciones Many-to-Many en la tabla intermedia automáticamente)
+  await prisma.snippet.delete({ 
+    where: { id } 
+  });
+
+  // 4. Devolver siempre un JSON, incluso si es un mensaje simple
+  res.status(200).json({ message: 'Snippet eliminado exitosamente' });
 });

@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import authRoutes from './routes/auth.routes.js'
 import snippetRoutes from './routes/snippet.routes.js';
 import { globalErrorHandler } from './middleware/errorMiddleware.js'; // Importar aquí
 
@@ -16,7 +17,8 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'API is running beautifully' });
 });
 
-app.use('/snippets', snippetRoutes);
+app.use('/auth', authRoutes);
+app.use('/api/snippets', snippetRoutes);
 
 app.use(globalErrorHandler);
 
