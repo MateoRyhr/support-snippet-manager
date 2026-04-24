@@ -33,22 +33,35 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
     folderId: '' // <-- Nuevo campo en el form
   })
 
-  // Efecto para recargar snippets cuando cambie la carpeta seleccionada en el Sidebar
   useEffect(() => {
+    let ignore = false
+
     const fetchSnippets = async () => {
+      setIsLoading(true) // 1. Mostramos el spinner inmediatamente
+
       try {
-        // Pasamos el folderId como query param (el backend que hicimos lo soporta)
         const url = selectedFolderId
           ? `/api/snippets?folderId=${selectedFolderId}`
           : '/api/snippets'
+
         const data = await request<Snippet[]>(url)
-        setSnippets(data)
+
+        if (!ignore) {
+          setSnippets(data)
+        }
       } catch (err) {
-        console.error(err)
+        if (!ignore) console.error(err)
+      } finally {
+        if (!ignore) setIsLoading(false) // 2. Quitamos el spinner
       }
     }
+
     fetchSnippets()
-  }, [request, selectedFolderId]) // Reacciona al cambio de carpeta
+
+    return () => {
+      ignore = true
+    }
+  }, [request, selectedFolderId])
 
   // En el Form de creación:
   // Añade este bloque antes de los botones de Guardar/Cancelar
@@ -57,7 +70,7 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
   ;<div>
     <label className="block text-sm font-medium text-gray-300 mb-1">Carpeta</label>
     <select
-      className="w-full bg-[#252526] border border-[#333] text-gray-100 rounded-md px-4 py-2 focus:border-cyan-500 outline-none"
+      className="bg-[#252526] border border-[#333] text-gray-100 rounded-md px-4 py-2 focus:border-cyan-500 outline-none"
       value={formData.folderId}
       onChange={(e) => setFormData({ ...formData, folderId: e.target.value })}
     >
@@ -69,21 +82,6 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
       ))}
     </select>
   </div>
-
-  // Fetch all snippets
-  useEffect(() => {
-    const fetchSnippets = async () => {
-      try {
-        const data = await request<Snippet[]>('/api/snippets')
-        setSnippets(data)
-      } catch (err: any) {
-        setError(err.message)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchSnippets()
-  }, [request])
 
   const handleOpenEdit = () => {
     if (!selectedSnippet) return
@@ -211,7 +209,7 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
   }
 
   return (
-    <div className="relative p-8 h-full overflow-y-auto w-full">
+    <div className="relative p-8 h-full w-full overflow-y-auto">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>

@@ -54,7 +54,7 @@ export const CommunityDashboard = () => {
   }
 
   return (
-    <div className="relative p-8 h-full overflow-y-auto w-full">
+    <div className="relative p-8 h-full w-full overflow-y-auto">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-100">Explorar Comunidad</h2>
         <p className="text-sm text-gray-400 mt-1">
@@ -142,7 +142,7 @@ export const CommunityDashboard = () => {
                 {snippet.tags.map((tag, i) => (
                   <span
                     key={i}
-                    className="text-[0.8rem] font-medium text-cyan-400 bg-cyan-900/20 border border-cyan-900/50 px-2 py-0.5 rounded"
+                    className="text-[] font-medium text-cyan-400 bg-cyan-900/20 border border-cyan-900/50 px-2 py-0.5 rounded"
                   >
                     #{tag.name}
                   </span>

@@ -160,9 +160,10 @@ export const Dashboard = () => {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-hidden bg-[#1e1e1e] flex">
+      <main className="flex-1 overflow-hidden bg-[#1e1e1e]">
         {activeTab === 'personal' ? (
           <PersonalWorkspace
+            key={selectedFolderId || 'all-snippets'}
             selectedFolderId={selectedFolderId}
             folders={folders}
             onFolderCreated={fetchFolders} // Refrescar si se crea una carpeta desde dentro
