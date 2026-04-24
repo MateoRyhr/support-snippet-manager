@@ -47,7 +47,7 @@ export const Dashboard = () => {
   }
 
   return (
-    <div className="flex h-screen bg-[#1e1e1e] text-gray-300 font-sans">
+    <div className="flex w-full w-screen h-screen bg-[#1e1e1e] text-gray-300 font-sans">
       <aside className="w-64 bg-[#252526] border-r border-[#333] flex flex-col">
         <div className="p-4 border-b border-[#333]">
           <h2 className="text-lg font-bold text-gray-100">Code Snippets</h2>
@@ -160,7 +160,7 @@ export const Dashboard = () => {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-hidden bg-[#1e1e1e]">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#1e1e1e]">
         {activeTab === 'personal' ? (
           <PersonalWorkspace
             key={selectedFolderId || 'all-snippets'}

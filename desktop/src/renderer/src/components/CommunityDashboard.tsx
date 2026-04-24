@@ -54,7 +54,7 @@ export const CommunityDashboard = () => {
   }
 
   return (
-    <div className="relative p-8 h-full w-full overflow-y-auto">
+    <div className="relative flex-1 p-8 w-full overflow-y-auto">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-100">Explorar Comunidad</h2>
         <p className="text-sm text-gray-400 mt-1">

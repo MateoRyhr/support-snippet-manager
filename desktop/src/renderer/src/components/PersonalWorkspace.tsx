@@ -209,7 +209,7 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
   }
 
   return (
-    <div className="relative p-8 h-full w-full overflow-y-auto">
+    <div className="relative flex-1 p-8 w-full overflow-y-auto">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
