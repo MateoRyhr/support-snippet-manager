@@ -18,7 +18,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'API is running beautifully' });
 });
 
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/snippets', snippetRoutes);
 
 app.use('/api/snippets', snippetRoutes);

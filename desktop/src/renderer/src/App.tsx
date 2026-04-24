@@ -1,11 +1,15 @@
 // src/App.tsx
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useAuth } from './context/AuthContext'
 import { AuthScreen } from './components/AuthScreen'
 import { Dashboard } from './components/Dashboard'
+import { VerifyScreen } from './components/VerifyScreen' // 1. Importamos la nueva pantalla
 
 function App(): React.JSX.Element {
   const { token } = useAuth()
+
+  // 2. Leemos la ruta actual al cargar la aplicación
+  const [currentPath] = useState(window.location.pathname)
 
   // --- LÓGICA DE ZOOM GLOBAL ---
   useEffect(() => {
@@ -17,17 +21,16 @@ function App(): React.JSX.Element {
       if (!e.ctrlKey && !e.metaKey) return
 
       // Aumentar Zoom (Ctrl + '+' o Ctrl + '=')
-      // (Se incluye '=' porque en muchos teclados el '+' requiere presionar Shift)
       if (e.key === '+' || e.key === '=') {
-        e.preventDefault() // Evitamos el comportamiento por defecto del navegador
-        currentBaseSize = Math.min(currentBaseSize + 2, 32) // Límite máximo: 32px
+        e.preventDefault()
+        currentBaseSize = Math.min(currentBaseSize + 2, 32)
         document.documentElement.style.fontSize = `${currentBaseSize}px`
       }
 
       // Disminuir Zoom (Ctrl + '-')
       if (e.key === '-') {
         e.preventDefault()
-        currentBaseSize = Math.max(currentBaseSize - 2, 10) // Límite mínimo: 10px
+        currentBaseSize = Math.max(currentBaseSize - 2, 10)
         document.documentElement.style.fontSize = `${currentBaseSize}px`
       }
 
@@ -41,11 +44,17 @@ function App(): React.JSX.Element {
 
     window.addEventListener('keydown', handleKeyDown)
 
-    // Limpieza del event listener cuando el componente se desmonta
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [])
+
+  // --- 3. NUESTRO ROUTER MANUAL ---
+  // Si la URL termina en /verify, mostramos la pantalla de verificación,
+  // sin importar si hay token o no.
+  if (currentPath === '/verify') {
+    return <VerifyScreen />
+  }
 
   // Guardián de Rutas: Sin token, no hay paraíso.
   if (!token) {

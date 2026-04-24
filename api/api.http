@@ -109,3 +109,29 @@ DELETE {{baseUrl}}/snippets/{{snippetId}}
 ### GET - Verificar Borrado (Debería devolver 404 Not Found porque acabamos de borrarlo)
 GET {{baseUrl}}/snippets/{{snippetId}}
 
+### Check register
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "mateoryhr",
+  "email": "mateoryhr29@gmail.com",
+  "password": "153214" 
+}
+
+### Check verify email
+POST {{baseUrl}}/api/auth/verify
+Content-Type: application/json
+
+{
+  "token": "b01d38c80b0ab7aa0e34032c413db20052aeb87169617b92151ff94e1f85d7a1"
+}
+
+### Check login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "mateoryhr29@gmail.com",
+  "password": "153214"
+}
