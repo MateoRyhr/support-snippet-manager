@@ -17,7 +17,7 @@ const router = Router();
 router.use(requireAuth);
 
 // --- RUTAS DE COLECCIONES (Estáticas) ---
-router.get('/public', getPublicSnippets); // GET /api/snippets/public
+router.get('/community', getPublicSnippets);
 router.get('/', getMySnippets);           // GET /api/snippets
 
 // --- RUTAS INDIVIDUALES (Dinámicas) ---

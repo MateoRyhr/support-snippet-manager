@@ -55,37 +55,46 @@ const snippets = await prisma.snippet.findMany({
 });
 
 // 2. NEW: Get public snippets for the Community Explorer
+// Get all public snippets for the community dashboard
 export const getPublicSnippets = catchAsync(async (req: Request, res: Response) => {
-  const { tags, search } = getSnippetsQuerySchema.parse(req.query);
+  const { tag, search } = req.query;
 
-  const whereClause: any = {
-    isPublic: true, // Only fetch public snippets
+  // Build the query object
+  const query: any = {
+    where: {
+      isPublic: true,
+    },
+    include: {
+      tags: true,
+      author: { // <-- CORREGIDO: Usamos 'author' tal como está en el schema
+        select: {
+          username: true, // Only show the author's name, keep other data private
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
   };
 
-  if (tags) {
-    const tagsArray = tags.split(',').map(tag => tag.trim());
-    whereClause.tags = { hasSome: tagsArray };
+  // Add tag filtering if provided
+  if (tag) {
+    query.where.tags = {
+      some: {
+        name: String(tag),
+      },
+    };
   }
 
+  // Add basic search if provided
   if (search) {
-    whereClause.OR = [
-      { title: { contains: search, mode: 'insensitive' } },
-      { content: { contains: search, mode: 'insensitive' } },
+    query.where.OR = [
+      { title: { contains: String(search), mode: 'insensitive' } },
+      { content: { contains: String(search), mode: 'insensitive' } },
     ];
   }
 
-  const snippets = await prisma.snippet.findMany({
-    where: whereClause,
-    orderBy: { createdAt: 'desc' },
-    include: { tags: true },
-    // Include the author's username so the frontend can display "Created by @username"
-    include: {
-      user: {
-        select: { username: true }
-      }
-    }
-  });
-
+  const snippets = await prisma.snippet.findMany(query);
   res.status(200).json(snippets);
 });
 

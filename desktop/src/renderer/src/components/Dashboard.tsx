@@ -2,10 +2,7 @@
 import React, { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { PersonalWorkspace } from './PersonalWorkspace'
-
-// Importaremos estos componentes en el siguiente paso
-// import { PersonalWorkspace } from './PersonalWorkspace';
-// import { CommunityExplorer } from './CommunityExplorer';
+import { CommunityDashboard } from './CommunityDashboard' // <-- 1. Importamos el nuevo componente
 
 export const Dashboard = () => {
   const { user, logout } = useAuth()
@@ -69,11 +66,9 @@ export const Dashboard = () => {
       {/* --- ÁREA DE CONTENIDO DINÁMICO --- */}
       <main className="flex-1 overflow-hidden bg-[#1e1e1e] flex">
         {activeTab === 'personal' ? (
-          <PersonalWorkspace /> // <-- REEMPLAZAR EL TEXTO TEMPORAL POR ESTO
+          <PersonalWorkspace />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500 w-full">
-            Explorador de la comunidad en construcción... 🌍
-          </div>
+          <CommunityDashboard /> // <-- 2. Reemplazamos el texto temporal por el componente
         )}
       </main>
     </div>
