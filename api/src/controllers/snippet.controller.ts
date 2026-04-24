@@ -12,6 +12,7 @@ const createSnippetSchema = z.object({
   content: z.string().min(1, "El contenido no puede estar vacío"),
   tags: z.array(z.string()).optional().default([]),
   isPublic: z.boolean().optional().default(false), // Added public flag
+  folderId: z.string().uuid().optional().nullable(),
 });
 
 const updateSnippetSchema = createSnippetSchema.partial();
@@ -27,11 +28,16 @@ const getSnippetsQuerySchema = z.object({
 // 1. Get ONLY the snippets belonging to the logged-in user
 export const getMySnippets = catchAsync(async (req: Request, res: Response) => {
   const { tags, search } = getSnippetsQuerySchema.parse(req.query);
+  const { folderId } = req.query;
 
   // Security Boundary: Force the query to only look at this user's data
   const whereClause: any = {
     userId: req.user!.id, 
   };
+
+  if (folderId !== undefined) {
+    whereClause.folderId = folderId === 'null' ? null : String(folderId);
+  }
 
   if (tags) {
     const tagsArray = tags.split(',').map(tag => tag.trim());
@@ -108,6 +114,7 @@ export const createSnippet = catchAsync(async (req: Request, res: Response) => {
       content: validatedData.content,
       isPublic: validatedData.isPublic,
       userId: req.user!.id,
+      folderId: validatedData.folderId || null,
       // Logic for Many-to-Many relation
       tags: {
         connectOrCreate: validatedData.tags.map((tagName: string) => ({

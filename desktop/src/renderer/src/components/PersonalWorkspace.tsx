@@ -1,22 +1,15 @@
 // src/components/PersonalWorkspace.tsx
 import React, { useEffect, useState } from 'react'
 import { useApi } from '../hooks/useApi'
+import { Folder, Snippet } from '../types/models'
 
-interface Tag {
-  id: string
-  name: string
+interface Props {
+  selectedFolderId: string | null
+  folders: Folder[]
+  onFolderCreated: () => void
 }
 
-interface Snippet {
-  id: string
-  title: string
-  content: string
-  tags: Tag[]
-  isPublic: boolean
-  createdAt: string
-}
-
-export const PersonalWorkspace = () => {
+export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }: Props) => {
   const { request } = useApi()
   const [snippets, setSnippets] = useState<Snippet[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -30,12 +23,52 @@ export const PersonalWorkspace = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null) // NUEVO: Estado de edición
+
+  // Actualizamos el formData para incluir folderId
   const [formData, setFormData] = useState({
     title: '',
     content: '',
     tags: '',
-    isPublic: false
+    isPublic: false,
+    folderId: '' // <-- Nuevo campo en el form
   })
+
+  // Efecto para recargar snippets cuando cambie la carpeta seleccionada en el Sidebar
+  useEffect(() => {
+    const fetchSnippets = async () => {
+      try {
+        // Pasamos el folderId como query param (el backend que hicimos lo soporta)
+        const url = selectedFolderId
+          ? `/api/snippets?folderId=${selectedFolderId}`
+          : '/api/snippets'
+        const data = await request<Snippet[]>(url)
+        setSnippets(data)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchSnippets()
+  }, [request, selectedFolderId]) // Reacciona al cambio de carpeta
+
+  // En el Form de creación:
+  // Añade este bloque antes de los botones de Guardar/Cancelar
+
+  /* JSX para el select de carpeta en el Modal */
+  ;<div>
+    <label className="block text-sm font-medium text-gray-300 mb-1">Carpeta</label>
+    <select
+      className="w-full bg-[#252526] border border-[#333] text-gray-100 rounded-md px-4 py-2 focus:border-cyan-500 outline-none"
+      value={formData.folderId}
+      onChange={(e) => setFormData({ ...formData, folderId: e.target.value })}
+    >
+      <option value="">Sin carpeta (Sueltos)</option>
+      {folders.map((f) => (
+        <option key={f.id} value={f.id}>
+          {f.name}
+        </option>
+      ))}
+    </select>
+  </div>
 
   // Fetch all snippets
   useEffect(() => {
@@ -52,21 +85,33 @@ export const PersonalWorkspace = () => {
     fetchSnippets()
   }, [request])
 
-  // --- NUEVA FUNCIÓN: Abrir modal en modo edición ---
   const handleOpenEdit = () => {
     if (!selectedSnippet) return
 
-    // Rellenamos el formulario convirtiendo el array de objetos Tag a un string separado por comas
     setFormData({
       title: selectedSnippet.title,
       content: selectedSnippet.content,
       tags: selectedSnippet.tags.map((t) => t.name).join(', '),
-      isPublic: selectedSnippet.isPublic
+      isPublic: selectedSnippet.isPublic,
+      folderId: selectedSnippet.folderId || '' // <-- Añadimos esto
     })
 
     setEditingId(selectedSnippet.id)
-    setSelectedSnippet(null) // Cerramos el modal de vista
-    setIsModalOpen(true) // Abrimos el modal del formulario
+    setSelectedSnippet(null)
+    setIsModalOpen(true)
+  }
+
+  // NUEVA FUNCIÓN: Abrir modal de creación
+  const handleOpenCreate = () => {
+    setEditingId(null)
+    setFormData({
+      title: '',
+      content: '',
+      tags: '',
+      isPublic: false,
+      folderId: selectedFolderId || '' // <-- Pre-selecciona la carpeta en la que estás
+    })
+    setIsModalOpen(true)
   }
 
   // --- NUEVA FUNCIÓN: Cerrar formulario y limpiar ---
@@ -91,7 +136,8 @@ export const PersonalWorkspace = () => {
         title: formData.title,
         content: formData.content,
         tags: tagsArray,
-        isPublic: formData.isPublic
+        isPublic: formData.isPublic,
+        folderId: formData.folderId || null
       }
 
       if (editingId) {
@@ -109,6 +155,7 @@ export const PersonalWorkspace = () => {
           body: payload
         })
         setSnippets([newSnippet, ...snippets])
+        onFolderCreated()
       }
 
       handleCloseForm()
@@ -172,7 +219,7 @@ export const PersonalWorkspace = () => {
           <p className="text-sm text-gray-400 mt-1">Administra tu código y configuraciones</p>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenCreate}
           className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-md transition-colors font-medium flex items-center gap-2 shadow-lg shadow-cyan-900/20"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,7 +277,7 @@ export const PersonalWorkspace = () => {
                 {snippet.tags.map((tag) => (
                   <span
                     key={tag.id}
-                    className="text-xs font-medium text-gray-500 bg-[#1e1e1e] border border-[#333] px-2 py-1 rounded-md"
+                    className="text-[0.8rem] font-medium text-cyan-400 bg-cyan-900/20 border border-cyan-900/50 px-2 py-0.5 rounded"
                   >
                     #{tag.name}
                   </span>
@@ -250,7 +297,7 @@ export const PersonalWorkspace = () => {
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="text-2xl font-bold text-gray-100">{selectedSnippet.title}</h3>
                   {selectedSnippet.isPublic && (
-                    <span className="text-[10px] bg-green-900/30 text-green-400 px-2.5 py-1 rounded-full border border-green-900/50 uppercase tracking-wider font-semibold">
+                    <span className="text-[0.6rem] bg-green-900/30 text-green-400 px-2.5 py-1 rounded-full border border-green-900/50 uppercase tracking-wider font-semibold">
                       Público
                     </span>
                   )}

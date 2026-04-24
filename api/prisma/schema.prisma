@@ -19,6 +19,8 @@ model User {
   
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  folders   Folder[]
 }
 
 model Snippet {
@@ -38,6 +40,10 @@ model Snippet {
   
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  // Hacemos que folderId sea opcional (String?) por si hay snippets "sueltos"
+  folderId  String?   
+  folder    Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
 }
 
 model Tag {
@@ -48,4 +54,22 @@ model Tag {
   snippets  Snippet[]
   
   createdAt DateTime  @default(now())
+}
+
+model Folder {
+  id        String    @id @default(uuid())
+  name      String
+  
+  // Relación con el Usuario (Dueño de la carpeta)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Relación con los Snippets
+  snippets  Snippet[] 
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Opcional pero recomendado: Un usuario no debería tener dos carpetas con el mismo nombre
+  @@unique([name, userId]) 
 }

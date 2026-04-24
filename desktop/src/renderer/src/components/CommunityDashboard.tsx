@@ -1,20 +1,7 @@
 // src/components/CommunityDashboard.tsx
 import React, { useEffect, useState } from 'react'
 import { useApi } from '../hooks/useApi'
-
-interface Tag {
-  id?: string
-  name: string
-}
-
-interface Snippet {
-  id: string
-  title: string
-  content: string
-  tags: Tag[]
-  author: { username: string }
-  createdAt: string
-}
+import { Tag, Snippet } from '../types/models'
 
 export const CommunityDashboard = () => {
   const { request } = useApi()
@@ -110,7 +97,7 @@ export const CommunityDashboard = () => {
                   {snippet.title}
                 </h3>
               </div>
-              <span className="text-[10px] text-gray-500 italic mb-3 block">
+              <span className="text-[0.8rem] text-gray-500 italic mb-3 block">
                 by @{snippet.author.username}
               </span>
 
@@ -155,7 +142,7 @@ export const CommunityDashboard = () => {
                 {snippet.tags.map((tag, i) => (
                   <span
                     key={i}
-                    className="text-[10px] font-medium text-cyan-400 bg-cyan-900/20 border border-cyan-900/50 px-2 py-0.5 rounded"
+                    className="text-[0.8rem] font-medium text-cyan-400 bg-cyan-900/20 border border-cyan-900/50 px-2 py-0.5 rounded"
                   >
                     #{tag.name}
                   </span>

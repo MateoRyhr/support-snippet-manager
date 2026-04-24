@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes.js'
 import snippetRoutes from './routes/snippet.routes.js';
+import folderRoutes from './routes/folder.routes.js'
 import { globalErrorHandler } from './middleware/errorMiddleware.js'; // Importar aquí
 
 dotenv.config();
@@ -19,6 +20,9 @@ app.get('/health', (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/api/snippets', snippetRoutes);
+
+app.use('/api/snippets', snippetRoutes);
+app.use('/api/folders', folderRoutes); // <-- Montamos las rutas aquí
 
 app.use(globalErrorHandler);
 
