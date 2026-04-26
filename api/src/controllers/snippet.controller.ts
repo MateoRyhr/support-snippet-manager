@@ -183,7 +183,7 @@ export const updateSnippet = catchAsync(async (req: Request, res: Response) => {
 // api/src/controllers/snippet.controller.ts
 
 export const deleteSnippet = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   // 1. Buscar si el snippet existe
   const existingSnippet = await prisma.snippet.findUnique({ 
