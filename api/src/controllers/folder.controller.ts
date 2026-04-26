@@ -45,7 +45,7 @@ export const getMyFolders = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const deleteFolder = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   const folder = await prisma.folder.findUnique({ where: { id } });
 
