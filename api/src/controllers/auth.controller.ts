@@ -61,7 +61,7 @@ export const register = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const verifyEmail = catchAsync(async (req: Request, res: Response) => {
-  const { token } = req.body;
+  const token = (req.query.token as string) || req.body.token;
 
   if (!token) {
     throw new AppError('Token de verificación no proporcionado', 400);

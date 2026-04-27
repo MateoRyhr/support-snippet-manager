@@ -2,7 +2,8 @@
 # VARIABLES GLOBALES
 # (Reemplaza este ID con uno que te devuelva el POST para probar GET/PATCH/DELETE)
 # ==========================================
-@baseUrl = http://localhost:3000
+# @baseUrl = http://localhost:3000
+@baseUrl = https://code-snippet-manager-api.onrender.com
 @snippetId = 2dd653c6-eb12-496a-971b-38d1d3f29f9f
 
 
@@ -125,6 +126,14 @@ Content-Type: application/json
 
 {
   "token": "60961e8d373553d9018c5f789de26da64ca198439a6038be3b6609ef99e213a6"
+}
+
+### Check verify email
+POST {{baseUrl}}/api/auth/verify?token=c08ec6dd0e7e875b3ac3aa0f16e5988896b916652891e0481015c87f7dd45755
+Content-Type: application/json
+
+{
+  
 }
 
 ### Check login
