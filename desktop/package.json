@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
-  "author": "https://mateoryhr.github.io/",
+  "author": {
+    "name": "Mateo Ryhr",
+    "email": "mateoryhr29@gmail.com",
+    "url": "https://mateoryhr.github.io"
+  },
   "homepage": "https://electron-vite.org",
   "build": {
     "appId": "com.mateoryhr.codesnippetmanager",
