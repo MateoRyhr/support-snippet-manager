@@ -1,7 +1,7 @@
 // src/components/CommunityDashboard.tsx
 import React, { useEffect, useState } from 'react'
 import { useApi } from '../hooks/useApi'
-import { Tag, Snippet } from '../types/models'
+import { Snippet } from '../types/models'
 
 export const CommunityDashboard = () => {
   const { request } = useApi()
@@ -97,9 +97,11 @@ export const CommunityDashboard = () => {
                   {snippet.title}
                 </h3>
               </div>
-              <span className="text-[0.8rem] text-gray-500 italic mb-3 block">
-                by @{snippet.author.username}
-              </span>
+              {snippet.author && (
+                <span className="text-[0.8rem] text-gray-500 italic mb-3 block">
+                  by @{snippet.author.username}
+                </span>
+              )}
 
               <div className="relative bg-[#1e1e1e] rounded-lg border border-[#2a2a2a] mb-4 flex-1">
                 {/* BOTÓN DE COPIAR EN LA TARJETA */}
@@ -165,7 +167,11 @@ export const CommunityDashboard = () => {
                 </div>
                 <p className="text-sm text-gray-400 mb-3">
                   Compartido por{' '}
-                  <span className="text-cyan-400">@{selectedSnippet.author.username}</span>
+                  {selectedSnippet.author && (
+                    <span className="text-[0.8rem] text-gray-500 italic mb-3 block">
+                      by @{selectedSnippet.author.username}
+                    </span>
+                  )}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {selectedSnippet.tags.map((tag, i) => (

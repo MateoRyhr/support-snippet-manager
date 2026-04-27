@@ -1,16 +1,17 @@
 // src/components/VerifyScreen.tsx
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-
-const API_URL = 'http://localhost:3000/api/auth'
+import { useApi } from '../hooks/useApi' // <-- Importamos nuestro hook
 
 export const VerifyScreen = () => {
   const { login } = useAuth()
+  const { request } = useApi() // <-- Instanciamos request
+
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
-    // 1. Extraemos el token de la URL (Ej: /verify?token=ab12cd34)
+    // 1. Extraemos el token de la URL
     const urlParams = new URLSearchParams(window.location.search)
     const token = urlParams.get('token')
 
@@ -23,23 +24,15 @@ export const VerifyScreen = () => {
     // 2. Enviamos el token a nuestro backend
     const verifyToken = async () => {
       try {
-        const res = await fetch(`${API_URL}/verify`, {
+        // Usamos nuestro hook, que ya sabe a dónde apuntar y cómo parsear errores
+        const data = await request<any>('/api/auth/verify', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token })
+          body: { token }
         })
 
-        const data = await res.json()
-
-        if (!res.ok) {
-          throw new Error(data.message || 'Error al verificar el correo.')
-        }
-
-        // 3. ¡Éxito! El backend nos devolvió un JWT válido.
+        // 3. ¡Éxito!
         setStatus('success')
 
-        // Damos una pequeña pausa para que el usuario lea el mensaje de éxito
-        // antes de tirarlo de cabeza al Dashboard
         setTimeout(() => {
           login(data.token, data.user)
         }, 2000)
@@ -50,7 +43,7 @@ export const VerifyScreen = () => {
     }
 
     verifyToken()
-  }, [login])
+  }, [login, request]) // <-- Agregamos request a las dependencias del useEffect
 
   return (
     <div className="flex h-screen bg-[#1e1e1e] items-center justify-center font-sans">

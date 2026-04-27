@@ -1,14 +1,13 @@
 // src/components/AuthScreen.tsx
 import React, { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-
-const API_URL = 'http://localhost:3000/api/auth'
+import { useApi } from '../hooks/useApi' // <-- Importamos nuestro hook
 
 export const AuthScreen = () => {
   const { login } = useAuth()
-  const [isLogin, setIsLogin] = useState(true)
+  const { request } = useApi() // <-- Instanciamos request
 
-  // Nuevo estado para mostrar el mensaje de éxito tras registrarse
+  const [isLogin, setIsLogin] = useState(true)
   const [isEmailSent, setIsEmailSent] = useState(false)
 
   const [email, setEmail] = useState('')
@@ -23,28 +22,22 @@ export const AuthScreen = () => {
     setError('')
     setIsLoading(true)
 
-    const endpoint = isLogin ? '/login' : '/register'
+    // Ajustamos la ruta para que se concatene bien con la de useApi
+    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
     const payload = isLogin ? { email, password } : { username, email, password }
 
     try {
-      const res = await fetch(`${API_URL}${endpoint}`, {
+      // ¡Mira qué limpio queda usando nuestro hook!
+      const data = await request<any>(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: payload
       })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Error en la autenticación')
-      }
 
       if (isLogin) {
         // MODO LOGIN: Iniciamos sesión globalmente
-        // Nota: Asegúrate de que coincida con cómo devuelve los datos tu backend ahora
         login(data.token, data.user)
       } else {
-        // MODO REGISTRO: No iniciamos sesión, mostramos mensaje de revisar correo
+        // MODO REGISTRO: Mostramos mensaje de revisar correo
         setIsEmailSent(true)
       }
     } catch (err: any) {
@@ -82,7 +75,7 @@ export const AuthScreen = () => {
           <button
             onClick={() => {
               setIsEmailSent(false)
-              setIsLogin(true) // Lo devolvemos a la pestaña de login
+              setIsLogin(true)
             }}
             className="w-full bg-[#333] hover:bg-[#444] text-white font-medium py-2 px-4 rounded-md transition-colors"
           >

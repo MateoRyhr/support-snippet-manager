@@ -2,7 +2,7 @@
 import { useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 
-const API_BASE_URL = 'http://localhost:3000'
+const API_BASE_URL = 'https://code-snippet-manager-api.onrender.com'
 
 // 1. Solución al 'any': Usamos 'unknown' que es la forma segura de decir "puede ser cualquier cosa"
 interface ApiOptions extends Omit<RequestInit, 'body'> {

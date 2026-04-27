@@ -37,7 +37,8 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
     let ignore = false
 
     const fetchSnippets = async () => {
-      setIsLoading(true) // 1. Mostramos el spinner inmediatamente
+      setIsLoading(true)
+      setError('') // <-- Limpiamos cualquier error previo antes de buscar de nuevo
 
       try {
         const url = selectedFolderId
@@ -49,10 +50,14 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
         if (!ignore) {
           setSnippets(data)
         }
-      } catch (err) {
-        if (!ignore) console.error(err)
+      } catch (err: any) {
+        if (!ignore) {
+          console.error(err)
+          // <-- AQUÍ USAMOS setError para que la UI reaccione y muestre el mensaje
+          setError(err.message || 'Ocurrió un error al cargar los snippets.')
+        }
       } finally {
-        if (!ignore) setIsLoading(false) // 2. Quitamos el spinner
+        if (!ignore) setIsLoading(false)
       }
     }
 
@@ -116,7 +121,7 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
   const handleCloseForm = () => {
     setIsModalOpen(false)
     setEditingId(null)
-    setFormData({ title: '', content: '', tags: '', isPublic: false })
+    setFormData({ title: '', content: '', tags: '', isPublic: false, folderId: '' })
   }
 
   // --- ACTUALIZADO: Manejar Create y Update ---
