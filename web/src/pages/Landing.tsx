@@ -43,7 +43,7 @@ export default function Landing() {
                 <p className="text-gray-400 mb-6 text-sm">Windows 10 / 11 (.exe)</p>
               </div>
               <a 
-                href="/downloads/CodeSnippetManager.exe" 
+                href="https://github.com/MateoRyhr/code-snippet-manager/releases/download/v1.0.0/CodeSnippetManager.exe" 
                 download
                 className="w-full inline-block bg-cyan-700 hover:bg-cyan-600 text-white font-semibold py-2 rounded transition-colors"
               >
@@ -72,7 +72,7 @@ export default function Landing() {
                 <p className="text-gray-400 mb-6 text-sm">Ubuntu / Debian (.AppImage)</p>
               </div>
               <a 
-                href="/downloads/CodeSnippetManager.AppImage" 
+                href="https://github.com/MateoRyhr/code-snippet-manager/releases/download/v1.0.0/CodeSnippetManager.AppImage" 
                 download
                 className="w-full inline-block bg-cyan-700 hover:bg-cyan-600 text-white font-semibold py-2 rounded transition-colors"
               >

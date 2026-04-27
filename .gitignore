@@ -38,3 +38,6 @@ desktop/.webpack/
 # --- GitHub Actions ---
 # A veces se generan reportes de tests localmente
 coverage/
+
+# Ignore desktop binaries
+public/downloads/
