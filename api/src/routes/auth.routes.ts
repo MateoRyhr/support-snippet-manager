@@ -10,6 +10,8 @@ router.post('/register', validate(registerSchema), register);
 
 // Endpoint: POST /auth/verify
 router.post('/verify', verifyEmail);
+// Endpoint: GET /auth/verify
+router.get('/verify', verifyEmail);
 
 // Endpoint: POST /auth/login
 router.post('/login', validate(loginSchema), login); 
