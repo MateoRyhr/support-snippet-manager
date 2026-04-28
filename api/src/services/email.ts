@@ -10,7 +10,8 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendVerificationEmail = async (to: string, token: string) => {
-  const verifyUrl = `${process.env.FRONTEND_URL}/verify?token=${token}`;
+  // Agregamos el /#/ antes de la ruta verify
+const verifyUrl = `${process.env.FRONTEND_URL}/#/verify?token=${token}`;
 
   const mailOptions = {
     from: `"Snippet Manager Support" <${process.env.EMAIL_USER}>`,
