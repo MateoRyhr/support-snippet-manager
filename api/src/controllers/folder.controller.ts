@@ -52,9 +52,18 @@ export const deleteFolder = catchAsync(async (req: Request, res: Response) => {
   if (!folder) throw new AppError('Carpeta no encontrada', 404);
   if (folder.userId !== req.user!.id) throw new AppError('No tienes permiso para eliminar esta carpeta', 403);
 
-  // Al eliminar, gracias al onDelete: SetNull en Prisma, los snippets no se borran, 
-  // solo quedan "sueltos" (folderId pasa a null).
-  await prisma.folder.delete({ where: { id } });
+  // Execute a database transaction to ensure both operations succeed or fail together
+  await prisma.$transaction([
+    // 1. Delete all snippets that belong to this folder
+    prisma.snippet.deleteMany({ 
+      where: { folderId: id } 
+    }),
+    
+    // 2. Delete the folder itself
+    prisma.folder.delete({ 
+      where: { id } 
+    })
+  ]);
 
-  res.status(200).json({ message: 'Carpeta eliminada exitosamente' });
+  res.status(200).json({ message: 'Folder and all its snippets deleted successfully' });
 });

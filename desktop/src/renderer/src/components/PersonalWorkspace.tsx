@@ -1,16 +1,17 @@
 // src/components/PersonalWorkspace.tsx
 import React, { useEffect, useState } from 'react'
-import { useApi } from '../hooks/useApi'
+import { useApi, SnippetPayload } from '../hooks/useApi' // Importamos el Payload
 import { Folder, Snippet } from '../types/models'
+import ImportButton from './ImportButton'
 
 interface Props {
   selectedFolderId: string | null
   folders: Folder[]
-  onFolderCreated: () => void
+  onWorkspaceUpdate: () => void
 }
 
-export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }: Props) => {
-  const { request } = useApi()
+export const PersonalWorkspace = ({ selectedFolderId, folders, onWorkspaceUpdate }: Props) => {
+  const { getSnippets, createSnippet, updateSnippet, deleteSnippet } = useApi()
   const [snippets, setSnippets] = useState<Snippet[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -30,7 +31,7 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
     content: '',
     tags: '',
     isPublic: false,
-    folderId: '' // <-- Nuevo campo en el form
+    folderId: ''
   })
 
   useEffect(() => {
@@ -38,14 +39,11 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
 
     const fetchSnippets = async () => {
       setIsLoading(true)
-      setError('') // <-- Limpiamos cualquier error previo antes de buscar de nuevo
+      setError('')
 
       try {
-        const url = selectedFolderId
-          ? `/api/snippets?folderId=${selectedFolderId}`
-          : '/api/snippets'
-
-        const data = await request<Snippet[]>(url)
+        // REFACTOR 1: Uso directo y limpio de getSnippets
+        const data = await getSnippets(selectedFolderId)
 
         if (!ignore) {
           setSnippets(data)
@@ -53,7 +51,6 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
       } catch (err: any) {
         if (!ignore) {
           console.error(err)
-          // <-- AQUÍ USAMOS setError para que la UI reaccione y muestre el mensaje
           setError(err.message || 'Ocurrió un error al cargar los snippets.')
         }
       } finally {
@@ -66,7 +63,7 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
     return () => {
       ignore = true
     }
-  }, [request, selectedFolderId])
+  }, [getSnippets, selectedFolderId])
 
   // En el Form de creación:
   // Añade este bloque antes de los botones de Guardar/Cancelar
@@ -124,7 +121,6 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
     setFormData({ title: '', content: '', tags: '', isPublic: false, folderId: '' })
   }
 
-  // --- ACTUALIZADO: Manejar Create y Update ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -135,30 +131,25 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
         .map((tag) => tag.trim())
         .filter((tag) => tag !== '')
 
-      const payload = {
+      // Tipamos el payload explícitamente
+      const payload: SnippetPayload = {
         title: formData.title,
         content: formData.content,
         tags: tagsArray,
         isPublic: formData.isPublic,
-        folderId: formData.folderId || null
+        folderId: formData.folderId || null,
+        language: 'plaintext' // Valor por defecto temporal, puedes cambiarlo luego
       }
 
       if (editingId) {
-        // MODO EDICIÓN
-        const updatedSnippet = await request<Snippet>(`/api/snippets/${editingId}`, {
-          method: 'PUT',
-          body: payload
-        })
-        // Actualizamos el snippet modificado en nuestra lista local
+        // REFACTOR 2: MODO EDICIÓN Súper limpio
+        const updatedSnippet = await updateSnippet(editingId, payload)
         setSnippets(snippets.map((s) => (s.id === editingId ? updatedSnippet : s)))
       } else {
-        // MODO CREACIÓN
-        const newSnippet = await request<Snippet>('/api/snippets', {
-          method: 'POST',
-          body: payload
-        })
+        // REFACTOR 3: MODO CREACIÓN Súper limpio
+        const newSnippet = await createSnippet(payload)
         setSnippets([newSnippet, ...snippets])
-        onFolderCreated()
+        onWorkspaceUpdate() // Asumo que esto recarga las carpetas
       }
 
       handleCloseForm()
@@ -181,7 +172,6 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
     }
   }
 
-  // Delete Logic
   const handleDeleteSnippet = async (id: string) => {
     const confirmDelete = window.confirm(
       '¿Estás seguro de que deseas eliminar este snippet? Esta acción no se puede deshacer.'
@@ -189,9 +179,11 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
     if (!confirmDelete) return
 
     try {
-      await request(`/api/snippets/${id}`, { method: 'DELETE' })
+      // REFACTOR 4: MODO BORRADO Limpio
+      await deleteSnippet(id)
       setSnippets(snippets.filter((s) => s.id !== id))
       setSelectedSnippet(null)
+      onWorkspaceUpdate()
     } catch (err: any) {
       alert(`Error al eliminar: ${err.message}`)
     }
@@ -221,15 +213,22 @@ export const PersonalWorkspace = ({ selectedFolderId, folders, onFolderCreated }
           <h2 className="text-2xl font-bold text-gray-100">Mis Snippets</h2>
           <p className="text-sm text-gray-400 mt-1">Administra tu código y configuraciones</p>
         </div>
-        <button
-          onClick={handleOpenCreate}
-          className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-md transition-colors font-medium flex items-center gap-2 shadow-lg shadow-cyan-900/20"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Nuevo Snippet
-        </button>
+        <div className="flex justify-between items-center mb-8">
+          <button
+            onClick={handleOpenCreate}
+            className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-md transition-colors font-medium flex items-center gap-2 shadow-lg shadow-cyan-900/20 m-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            Nuevo Snippet
+          </button>
+        </div>
       </div>
 
       {/* Snippets Grid */}

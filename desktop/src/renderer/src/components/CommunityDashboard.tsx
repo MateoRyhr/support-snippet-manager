@@ -4,23 +4,22 @@ import { useApi } from '../hooks/useApi'
 import { Snippet } from '../types/models'
 
 export const CommunityDashboard = () => {
-  const { request } = useApi()
+  // Use the specific domain function
+  const { getCommunitySnippets } = useApi()
+
   const [snippets, setSnippets] = useState<Snippet[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
 
-  // --- NUEVOS ESTADOS ---
+  // View state
   const [selectedSnippet, setSelectedSnippet] = useState<Snippet | null>(null)
-  // Usamos un string (el ID) en lugar de un booleano para saber EXACTAMENTE qué elemento se copió
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const fetchPublicSnippets = async (search = '') => {
     setIsLoading(true)
     try {
-      const endpoint = search
-        ? `/api/snippets/community?search=${search}`
-        : '/api/snippets/community'
-      const data = await request<Snippet[]>(endpoint)
+      // Direct call, handling search internally in useApi
+      const data = await getCommunitySnippets(search)
       setSnippets(data)
     } catch (err) {
       console.error('Error fetching community snippets:', err)
@@ -31,22 +30,21 @@ export const CommunityDashboard = () => {
 
   useEffect(() => {
     fetchPublicSnippets()
-  }, [request])
+  }, [getCommunitySnippets]) // Updated dependency
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     fetchPublicSnippets(searchTerm)
   }
 
-  // --- LÓGICA DE COPIADO ---
+  // --- COPY LOGIC ---
   const handleCopyCode = async (content: string, id: string, e?: React.MouseEvent) => {
-    // Si el evento existe, evitamos que el click se propague hacia la tarjeta padre
+    // Prevent event bubbling so the card doesn't open the modal
     if (e) e.stopPropagation()
 
     try {
       await navigator.clipboard.writeText(content)
       setCopiedId(id)
-      // Reseteamos el estado de copiado después de 2 segundos
       setTimeout(() => setCopiedId(null), 2000)
     } catch (err) {
       console.error('Failed to copy text: ', err)
@@ -62,7 +60,7 @@ export const CommunityDashboard = () => {
         </p>
       </div>
 
-      {/* Buscador */}
+      {/* Search Bar */}
       <form onSubmit={handleSearch} className="mb-8 flex gap-3">
         <input
           type="text"
@@ -79,7 +77,7 @@ export const CommunityDashboard = () => {
         </button>
       </form>
 
-      {/* Lista de Snippets */}
+      {/* Snippets List */}
       {isLoading ? (
         <div className="flex justify-center py-20">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-cyan-500"></div>
@@ -89,7 +87,7 @@ export const CommunityDashboard = () => {
           {snippets.map((snippet) => (
             <div
               key={snippet.id}
-              onClick={() => setSelectedSnippet(snippet)} // Abrir modal al hacer clic
+              onClick={() => setSelectedSnippet(snippet)}
               className="bg-[#252526] border border-[#333] p-5 rounded-xl flex flex-col group hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-900/10 transition-all cursor-pointer relative"
             >
               <div className="flex justify-between items-start mb-2 pr-8">
@@ -104,7 +102,7 @@ export const CommunityDashboard = () => {
               )}
 
               <div className="relative bg-[#1e1e1e] rounded-lg border border-[#2a2a2a] mb-4 flex-1">
-                {/* BOTÓN DE COPIAR EN LA TARJETA */}
+                {/* IN-CARD COPY BUTTON */}
                 <button
                   onClick={(e) => handleCopyCode(snippet.content, snippet.id, e)}
                   className="absolute top-2 right-2 p-1.5 bg-[#333] hover:bg-[#444] text-gray-400 hover:text-white rounded-md transition-colors border border-[#444]"
@@ -155,11 +153,11 @@ export const CommunityDashboard = () => {
         </div>
       )}
 
-      {/* --- MODAL DE VISUALIZACIÓN --- */}
+      {/* --- VIEW MODAL --- */}
       {selectedSnippet && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-[#1e1e1e] border border-[#333] rounded-xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh]">
-            {/* Header del Modal */}
+            {/* Modal Header */}
             <div className="p-6 border-b border-[#333] flex justify-between items-start gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-1">
@@ -202,9 +200,9 @@ export const CommunityDashboard = () => {
               </button>
             </div>
 
-            {/* Contenido del Modal */}
+            {/* Modal Content */}
             <div className="p-6 overflow-y-auto flex-1 relative group">
-              {/* BOTÓN DE COPIAR EN EL MODAL */}
+              {/* IN-MODAL COPY BUTTON */}
               <button
                 onClick={() => handleCopyCode(selectedSnippet.content, selectedSnippet.id)}
                 className="absolute top-8 right-8 bg-[#333] hover:bg-[#444] text-gray-300 hover:text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 border border-[#444]"
@@ -246,7 +244,7 @@ export const CommunityDashboard = () => {
               </pre>
             </div>
 
-            {/* Footer del Modal */}
+            {/* Modal Footer */}
             <div className="p-6 border-t border-[#333] flex justify-between items-center bg-[#252526] rounded-b-xl">
               <span className="text-xs text-gray-500">
                 Publicado el: {new Date(selectedSnippet.createdAt).toLocaleDateString()}

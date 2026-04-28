@@ -1,7 +1,9 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import fs from 'fs'
+import path from 'path'
 
 function createWindow(): void {
   // Create the browser window.
@@ -72,3 +74,119 @@ app.on('window-all-closed', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
+// Escuchar cuando React pida abrir un directorio
+
+interface SnippetImport {
+  title: string
+  description: string
+  content: string
+  language: string
+}
+
+const extensionToLanguage: Record<string, string> = {
+  // Web & UI
+  '.js': 'javascript',
+  '.jsx': 'javascript',
+  '.mjs': 'javascript',
+  '.ts': 'typescript',
+  '.tsx': 'typescript',
+  '.html': 'html',
+  '.htm': 'html',
+  '.css': 'css',
+  '.scss': 'scss',
+  '.sass': 'scss',
+  '.less': 'less',
+  '.vue': 'vue',
+  '.svelte': 'svelte',
+  // Backend & Sistemas
+  '.py': 'python',
+  '.pyw': 'python',
+  '.java': 'java',
+  '.cs': 'csharp',
+  '.cpp': 'cpp',
+  '.cc': 'cpp',
+  '.cxx': 'cpp',
+  '.h': 'c',
+  '.hpp': 'cpp',
+  '.c': 'c',
+  '.go': 'go',
+  '.rs': 'rust',
+  '.rb': 'ruby',
+  '.php': 'php',
+  // Mobile
+  '.swift': 'swift',
+  '.kt': 'kotlin',
+  '.kts': 'kotlin',
+  '.dart': 'dart',
+  // Data & Config
+  '.sql': 'sql',
+  '.json': 'json',
+  '.yml': 'yaml',
+  '.yaml': 'yaml',
+  '.xml': 'xml',
+  '.svg': 'xml',
+  '.md': 'markdown',
+  '.mdx': 'markdown',
+  '.graphql': 'graphql',
+  '.gql': 'graphql',
+  // Shell & Scripts
+  '.sh': 'bash',
+  '.bash': 'bash',
+  '.zsh': 'bash',
+  '.ps1': 'powershell',
+  '.bat': 'bat',
+  '.cmd': 'bat',
+  '.lua': 'lua',
+  '.r': 'r'
+}
+
+ipcMain.handle('dialog:openDirectory', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    properties: ['openDirectory'],
+    title: 'Seleccionar carpeta para importar'
+  })
+
+  if (canceled || filePaths.length === 0) {
+    return []
+  }
+
+  const dirPath = filePaths[0]
+  const files = fs.readdirSync(dirPath)
+
+  // SOLUCIÓN AL ERROR NEVER: Le asignamos el tipado explícito al arreglo
+  const snippetsToImport: SnippetImport[] = []
+
+  for (const file of files) {
+    const filePath = path.join(dirPath, file)
+    const stat = fs.statSync(filePath)
+
+    if (stat.isFile()) {
+      try {
+        const content = fs.readFileSync(filePath, 'utf-8')
+        const ext = path.extname(file).toLowerCase()
+
+        // Buscamos en el diccionario. Si no existe, por defecto es 'plaintext'
+        let language = extensionToLanguage[ext] || 'plaintext'
+
+        // Casos especiales (Archivos sin extensión o nombres específicos)
+        const fileNameLower = file.toLowerCase()
+        if (fileNameLower.includes('dockerfile')) {
+          language = 'dockerfile'
+        } else if (fileNameLower === 'makefile') {
+          language = 'makefile'
+        }
+
+        snippetsToImport.push({
+          title: file,
+          description: file,
+          content: content,
+          language: language
+        })
+      } catch (error) {
+        console.error(`Error leyendo el archivo ${file}:`, error)
+      }
+    }
+  }
+
+  return snippetsToImport
+})
