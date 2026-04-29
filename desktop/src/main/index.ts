@@ -76,13 +76,6 @@ app.on('window-all-closed', () => {
 // code. You can also put them in separate files and require them here.
 // Escuchar cuando React pida abrir un directorio
 
-interface SnippetImport {
-  title: string
-  description: string
-  content: string
-  language: string
-}
-
 const extensionToLanguage: Record<string, string> = {
   // Web & UI
   '.js': 'javascript',
