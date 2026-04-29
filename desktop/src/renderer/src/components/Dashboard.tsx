@@ -22,6 +22,18 @@ export const Dashboard = () => {
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
 
+  const { getSnippets } = useApi() // Asegúrate de tener getSnippets
+  const [contextModal, setContextModal] = useState<{
+    isOpen: boolean
+    content: string
+    title: string
+  }>({
+    isOpen: false,
+    content: '',
+    title: ''
+  })
+  const [isGenerating, setIsGenerating] = useState(false)
+
   const fetchFolders = async () => {
     try {
       // Direct and strongly typed domain call
@@ -68,6 +80,45 @@ export const Dashboard = () => {
       }
     } catch (err: any) {
       alert(`Error al eliminar la carpeta: ${err.message}`)
+    }
+  }
+
+  const handleGenerateContext = async (folderId: string, folderName: string) => {
+    setIsGenerating(true)
+    try {
+      const snippets = await getSnippets(folderId)
+
+      if (snippets.length === 0) {
+        alert('Esta carpeta está vacía.')
+        return
+      }
+
+      // Estructuramos el contexto para la IA
+      const fullContext = snippets
+        .map((s) => {
+          return `--- FILE: ${s.title} (${s.tags.map((t) => t.name).join(', ')}) ---\n${s.content}\n`
+        })
+        .join('\n')
+
+      setContextModal({
+        isOpen: true,
+        content: fullContext,
+        title: folderName
+      })
+    } catch (err) {
+      console.error(err)
+      alert('Error al generar el contexto.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const copyContextToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(contextModal.content)
+      alert('¡Contexto copiado al portapapeles!')
+    } catch (err) {
+      alert('Error al copiar.')
     }
   }
 
@@ -164,11 +215,30 @@ export const Dashboard = () => {
                 </button>
 
                 {/* Counter / Delete Actions Container */}
-                <div className="flex items-center shrink-0">
+                <div className="flex items-center shrink-0 gap-1">
                   {/* Show count by default, hide on hover to show trash icon */}
                   <span className="text-[0.8rem] opacity-50 group-hover:hidden">
                     {folder._count?.snippets || 0}
                   </span>
+
+                  {/* Botón de Contexto AI */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleGenerateContext(folder.id, folder.name)
+                    }}
+                    className="hidden group-hover:block text-gray-400 hover:text-cyan-400 transition-colors"
+                    title="Generar contexto para IA"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                  </button>
 
                   {/* Delete Button: Hidden by default, shown on group hover */}
                   <button
@@ -270,6 +340,74 @@ export const Dashboard = () => {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* --- MODAL DE CONTEXTO AI --- */}
+      {contextModal.isOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[80] p-4">
+          <div className="bg-[#1e1e1e] border border-[#333] rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
+            <div className="p-6 border-b border-[#333] flex justify-between items-center bg-[#252526] rounded-t-xl">
+              <div>
+                <h3 className="text-xl font-bold text-white">
+                  Contexto del Proyecto: {contextModal.title}
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  Copia este bloque para pegarlo en ChatGPT, Claude o Gemini.
+                </p>
+              </div>
+              <button
+                onClick={() => setContextModal({ ...contextModal, isOpen: false })}
+                className="text-gray-400 hover:text-white"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto bg-[#0d0d0d] flex-1 font-mono text-sm">
+              <pre className="text-cyan-400/90 whitespace-pre-wrap selection:bg-cyan-500/30">
+                {contextModal.content}
+              </pre>
+            </div>
+
+            <div className="p-4 border-t border-[#333] flex justify-end gap-3 bg-[#252526] rounded-b-xl">
+              <button
+                onClick={() => setContextModal({ ...contextModal, isOpen: false })}
+                className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white"
+              >
+                Cerrar
+              </button>
+              <button
+                onClick={copyContextToClipboard}
+                className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-2 rounded-md transition-colors font-medium flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+                Copiar todo el contexto
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Indicador de carga global (opcional) */}
+      {isGenerating && (
+        <div className="fixed bottom-8 right-8 bg-cyan-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-pulse z-[100]">
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          Generando contexto...
         </div>
       )}
     </div>
