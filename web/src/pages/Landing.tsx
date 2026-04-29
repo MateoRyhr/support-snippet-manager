@@ -13,7 +13,7 @@ export default function Landing() {
         <div className="w-full max-w-4xl my-8 rounded-xl overflow-hidden shadow-2xl border border-gray-700 bg-gray-800 flex items-center justify-center min-h-[300px] md:min-h-[500px]">
           {/* TODO: Place your recorded demo.gif in the public folder and update the src */}
           <img 
-            src='/demo.gif'
+            src='/code-snippet-manager/demo.gif'
             alt="Code Snippet Manager Demo" 
             className="w-full h-full object-cover"
             onError={(e) => {
