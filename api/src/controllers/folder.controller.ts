@@ -67,3 +67,32 @@ export const deleteFolder = catchAsync(async (req: Request, res: Response) => {
 
   res.status(200).json({ message: 'Folder and all its snippets deleted successfully' });
 });
+
+// Asegúrate de exportarlo junto a los demás
+export const updateFolder = catchAsync(async (req: Request, res: Response) => {
+  // Reutilizamos el esquema que ya tenías para crear
+  const { name } = createFolderSchema.parse(req.body);
+  const id = req.params.id as string;
+  const userId = req.user!.id;
+
+  const folder = await prisma.folder.findUnique({ where: { id } });
+
+  if (!folder) throw new AppError('Carpeta no encontrada', 404);
+  if (folder.userId !== userId) throw new AppError('No tienes permiso', 403);
+
+  // Verificamos que no exista OTRA carpeta con el mismo nombre
+  const existingFolder = await prisma.folder.findFirst({
+    where: { name, userId, id: { not: id } }
+  });
+
+  if (existingFolder) {
+    throw new AppError('Ya tienes otra carpeta con este nombre', 400);
+  }
+
+  const updatedFolder = await prisma.folder.update({
+    where: { id },
+    data: { name }
+  });
+
+  res.status(200).json(updatedFolder);
+});
