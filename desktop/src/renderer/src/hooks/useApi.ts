@@ -29,6 +29,7 @@ interface UseApiReturn {
   getFolders: () => Promise<Folder[]>
   createFolder: (id: string) => Promise<Folder>
   getCommunitySnippets: (search: string) => Promise<Snippet[]>
+  updateFolder: (id: string, name: string) => Promise<Folder>
   deleteFolder: (id: string) => Promise<void>
 }
 
@@ -142,6 +143,16 @@ export const useApi = (): UseApiReturn => {
     [request]
   )
 
+  const updateFolder = useCallback(
+    async (id: string, name: string) => {
+      return request<Folder>(`/api/folders/${id}`, {
+        method: 'PUT',
+        body: { name }
+      })
+    },
+    [request]
+  )
+
   const deleteFolder = useCallback(
     async (id: string) => {
       return request<void>(`/api/folders/${id}`, {
@@ -160,6 +171,7 @@ export const useApi = (): UseApiReturn => {
     getCommunitySnippets,
     getFolders,
     createFolder,
+    updateFolder,
     deleteFolder
   }
 }

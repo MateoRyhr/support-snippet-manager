@@ -10,7 +10,7 @@ import ImportButton from './ImportButton'
 export const Dashboard = () => {
   const { user, logout } = useAuth()
   // Cleanly destructure only the methods we need
-  const { getFolders, createFolder, deleteFolder } = useApi()
+  const { getFolders, createFolder, updateFolder, deleteFolder } = useApi()
 
   const [activeTab, setActiveTab] = useState<'personal' | 'community'>('personal')
   const [folders, setFolders] = useState<Folder[]>([])
@@ -33,6 +33,10 @@ export const Dashboard = () => {
     title: ''
   })
   const [isGenerating, setIsGenerating] = useState(false)
+
+  // Estados para el Modal de Edición de Carpetas
+  const [isEditFolderModalOpen, setIsEditFolderModalOpen] = useState(false)
+  const [folderToEdit, setFolderToEdit] = useState<{ id: string; name: string } | null>(null)
 
   const fetchFolders = async () => {
     try {
@@ -58,6 +62,23 @@ export const Dashboard = () => {
       setIsFolderModalOpen(false)
     } catch (err: any) {
       alert(err.message)
+    }
+  }
+
+  const handleUpdateFolder = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!folderToEdit) return
+
+    try {
+      const updatedFolder = await updateFolder(folderToEdit.id, folderToEdit.name)
+      // Actualizamos el estado local para que sea instantáneo (Optimistic UI)
+      setFolders(
+        folders.map((f) => (f.id === updatedFolder.id ? { ...f, name: updatedFolder.name } : f))
+      )
+      setIsEditFolderModalOpen(false)
+      setFolderToEdit(null)
+    } catch (err: any) {
+      alert(`Error al actualizar: ${err.message}`)
     }
   }
 
@@ -221,6 +242,26 @@ export const Dashboard = () => {
                     {folder._count?.snippets || 0}
                   </span>
 
+                  {/* NUEVO: Botón de Editar (Lápiz) */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setFolderToEdit({ id: folder.id, name: folder.name })
+                      setIsEditFolderModalOpen(true)
+                    }}
+                    className="hidden group-hover:block text-gray-400 hover:text-cyan-400 transition-colors"
+                    title="Renombrar carpeta"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                      />
+                    </svg>
+                  </button>
+
                   {/* Botón de Contexto AI */}
                   <button
                     onClick={(e) => {
@@ -336,6 +377,43 @@ export const Dashboard = () => {
                   className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-1.5 rounded-md text-sm font-medium"
                 >
                   Crear
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL EDITAR CARPETA --- */}
+      {isEditFolderModalOpen && folderToEdit && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-[#1e1e1e] border border-[#333] rounded-xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-4">Renombrar Carpeta</h3>
+            <form onSubmit={handleUpdateFolder}>
+              <input
+                autoFocus
+                type="text"
+                placeholder="Nuevo nombre de la carpeta"
+                className="w-full bg-[#252526] border border-[#333] text-white rounded-md px-4 py-2 focus:border-cyan-500 outline-none mb-4"
+                value={folderToEdit.name}
+                onChange={(e) => setFolderToEdit({ ...folderToEdit, name: e.target.value })}
+              />
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditFolderModalOpen(false)
+                    setFolderToEdit(null)
+                  }}
+                  className="text-sm text-gray-400"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-1.5 rounded-md text-sm font-medium"
+                >
+                  Guardar Cambios
                 </button>
               </div>
             </form>
