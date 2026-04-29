@@ -4,7 +4,11 @@ declare global {
   interface Window {
     electron: ElectronAPI
     api: {
-      openDirectory: () => Promise<
+      importFiles: (options: {
+        mode: 'directory' | 'files'
+        extensions: string[]
+        recursive: boolean
+      }) => Promise<
         Array<{
           title: string
           description: string

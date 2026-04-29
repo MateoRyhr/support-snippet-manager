@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react'
 import { useApi, SnippetPayload } from '../hooks/useApi' // Importamos el Payload
 import { Folder, Snippet } from '../types/models'
-import ImportButton from './ImportButton'
 
 interface Props {
   selectedFolderId: string | null

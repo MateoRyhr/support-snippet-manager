@@ -4,7 +4,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 // Custom APIs for renderer
 const api = {
   // Añadimos nuestra nueva función
-  openDirectory: () => ipcRenderer.invoke('dialog:openDirectory')
+  importFiles: (options: any) => ipcRenderer.invoke('dialog:importFiles', options)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

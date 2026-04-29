@@ -28,12 +28,12 @@ interface UseApiReturn {
   deleteSnippet: (id: string) => Promise<void>
   getFolders: () => Promise<Folder[]>
   createFolder: (id: string) => Promise<Folder>
-  getCommunitySnippets: () => Promise<Snippet[]>
+  getCommunitySnippets: (search: string) => Promise<Snippet[]>
   deleteFolder: (id: string) => Promise<void>
 }
 
 export const useApi = (): UseApiReturn => {
-  const { token, logout } = useAuth()
+  const { token } = useAuth()
 
   // --- MOTOR BASE DE PETICIONES ---
   const request = useCallback(

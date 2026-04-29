@@ -140,51 +140,104 @@ const extensionToLanguage: Record<string, string> = {
   '.r': 'r'
 }
 
-ipcMain.handle('dialog:openDirectory', async () => {
-  const { canceled, filePaths } = await dialog.showOpenDialog({
-    properties: ['openDirectory'],
-    title: 'Seleccionar carpeta para importar'
-  })
+interface ImportOptions {
+  mode: 'directory' | 'files'
+  extensions: string[]
+  recursive: boolean // NUEVA OPCIÓN
+}
 
-  if (canceled || filePaths.length === 0) {
-    return []
-  }
-
-  const dirPath = filePaths[0]
-  const files = fs.readdirSync(dirPath)
-
-  // SOLUCIÓN AL ERROR NEVER: Le asignamos el tipado explícito al arreglo
-  const snippetsToImport: SnippetImport[] = []
+// FUNCIÓN RECURSIVA PARA LEER SUBCARPETAS
+function getFilesRecursively(dir: string, extensions: string[], fileList: string[] = []): string[] {
+  const files = fs.readdirSync(dir)
 
   for (const file of files) {
-    const filePath = path.join(dirPath, file)
+    const filePath = path.join(dir, file)
     const stat = fs.statSync(filePath)
 
-    if (stat.isFile()) {
-      try {
-        const content = fs.readFileSync(filePath, 'utf-8')
-        const ext = path.extname(file).toLowerCase()
-
-        // Buscamos en el diccionario. Si no existe, por defecto es 'plaintext'
-        let language = extensionToLanguage[ext] || 'plaintext'
-
-        // Casos especiales (Archivos sin extensión o nombres específicos)
-        const fileNameLower = file.toLowerCase()
-        if (fileNameLower.includes('dockerfile')) {
-          language = 'dockerfile'
-        } else if (fileNameLower === 'makefile') {
-          language = 'makefile'
-        }
-
-        snippetsToImport.push({
-          title: file,
-          description: file,
-          content: content,
-          language: language
-        })
-      } catch (error) {
-        console.error(`Error leyendo el archivo ${file}:`, error)
+    if (stat.isDirectory()) {
+      // Si es una carpeta y no está en la lista de ignoradas, entramos a buscar más
+      if (!IGNORE_DIRS.includes(file)) {
+        getFilesRecursively(filePath, extensions, fileList)
       }
+    } else if (stat.isFile()) {
+      const ext = path.extname(file).toLowerCase()
+      // Si no hay filtro, o si la extensión coincide, lo agregamos
+      if (extensions.length === 0 || extensions.includes(ext)) {
+        fileList.push(filePath)
+      }
+    }
+  }
+
+  return fileList
+}
+
+// Lista de carpetas que JAMÁS deberíamos intentar leer como código
+const IGNORE_DIRS = ['.git', 'node_modules', '.godot', 'dist', 'build']
+
+ipcMain.handle('dialog:importFiles', async (_, options: ImportOptions) => {
+  const { mode, extensions, recursive } = options
+
+  const dialogProperties: any[] =
+    mode === 'directory' ? ['openDirectory'] : ['openFile', 'multiSelections']
+
+  const dialogFilters =
+    mode === 'files' && extensions.length > 0
+      ? [{ name: 'Archivos Filtrados', extensions: extensions.map((e) => e.replace('.', '')) }]
+      : []
+
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    properties: dialogProperties,
+    filters: dialogFilters,
+    title: mode === 'directory' ? 'Seleccionar carpeta' : 'Seleccionar archivos'
+  })
+
+  if (canceled || filePaths.length === 0) return []
+
+  let filesToProcess: string[] = []
+
+  // NUEVA LÓGICA DE DIRECTORIOS
+  if (mode === 'directory') {
+    const dirPath = filePaths[0]
+    if (recursive) {
+      filesToProcess = getFilesRecursively(dirPath, extensions)
+    } else {
+      // Búsqueda superficial (solo la carpeta actual)
+      const dirFiles = fs.readdirSync(dirPath)
+      for (const file of dirFiles) {
+        const filePath = path.join(dirPath, file)
+        if (fs.statSync(filePath).isFile()) {
+          const ext = path.extname(file).toLowerCase()
+          if (extensions.length === 0 || extensions.includes(ext)) {
+            filesToProcess.push(filePath)
+          }
+        }
+      }
+    }
+  } else {
+    filesToProcess = filePaths
+  }
+
+  const snippetsToImport: any[] = []
+
+  for (const filePath of filesToProcess) {
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8')
+      const file = path.basename(filePath)
+      const ext = path.extname(file).toLowerCase()
+
+      let language = extensionToLanguage[ext] || 'plaintext'
+      const fileNameLower = file.toLowerCase()
+      if (fileNameLower.includes('dockerfile')) language = 'dockerfile'
+      else if (fileNameLower === 'makefile') language = 'makefile'
+
+      snippetsToImport.push({
+        title: file,
+        description: file,
+        content: content,
+        language: language
+      })
+    } catch (error) {
+      console.error(`Error leyendo el archivo ${filePath}:`, error)
     }
   }
 
