@@ -10,6 +10,7 @@ function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
+    title: "Code Snippet Manager"
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -130,7 +131,14 @@ const extensionToLanguage: Record<string, string> = {
   '.bat': 'bat',
   '.cmd': 'bat',
   '.lua': 'lua',
-  '.r': 'r'
+  '.r': 'r',
+  // Game engines
+  // Godot
+  '.gd': 'godot',
+  '.tscn': 'godot-scene',
+  gdextension: 'godot-config',
+  // Game maker
+  '.gml': 'game-maker'
 }
 
 interface ImportOptions {
@@ -169,6 +177,7 @@ const IGNORE_DIRS = ['.git', 'node_modules', '.godot', 'dist', 'build']
 
 ipcMain.handle('dialog:importFiles', async (_, options: ImportOptions) => {
   const { mode, extensions, recursive } = options
+  const mainWindow = BrowserWindow.getFocusedWindow()
 
   const dialogProperties: any[] =
     mode === 'directory' ? ['openDirectory'] : ['openFile', 'multiSelections']
@@ -178,7 +187,9 @@ ipcMain.handle('dialog:importFiles', async (_, options: ImportOptions) => {
       ? [{ name: 'Archivos Filtrados', extensions: extensions.map((e) => e.replace('.', '')) }]
       : []
 
-  const { canceled, filePaths } = await dialog.showOpenDialog({
+  // Pasamos 'mainWindow' como primer argumento.
+  // Esto hace que el diálogo sea "modal" a esa ventana y fuerce la devolución del foco en Windows.
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow!, {
     properties: dialogProperties,
     filters: dialogFilters,
     title: mode === 'directory' ? 'Seleccionar carpeta' : 'Seleccionar archivos'

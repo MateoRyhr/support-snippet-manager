@@ -172,3 +172,8 @@ code {
     display: none;
   }
 }
+
+/* Previene bugs de bloqueo de clics y foco en Electron (Windows) */
+input, textarea, button, select, a {
+  -webkit-app-region: no-drag !important;
+}
